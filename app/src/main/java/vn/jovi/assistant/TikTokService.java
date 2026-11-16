@@ -8,6 +8,8 @@ import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.os.PowerManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 
 public final class TikTokService extends AccessibilityService {
     static final String[] PACKAGES = {"com.zhiliaoapp.musically", "com.ss.android.ugc.trill"};
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private Button control;
     private VoiceInput voice;
 
@@ -84,9 +87,7 @@ public final class TikTokService extends AccessibilityService {
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
             if (isYouTube(root)) {
-                if (!YouTubeSearch.handle(this, phrase, this::message)) {
-                    message("Thử nói “Tìm bài hát Believer”.");
-                }
+                handleYouTube(root, phrase);
                 return;
             }
             if (!isTikTok(root)) return;
@@ -96,6 +97,38 @@ public final class TikTokService extends AccessibilityService {
                 default -> message("Bạn có thể nói “video tiếp theo”.");
             }
         }, this::message);
+    }
+
+    private void handleYouTube(AccessibilityNodeInfo root, String phrase) {
+        if (YouTubeSearch.handle(this, phrase, this::message)) return;
+        String command = VoiceInput.command(phrase);
+        int result = YouTubeControls.resultNumber(command);
+        if (result != 0) {
+            if (!YouTubeControls.openResult(root, result)) {
+                message("Chưa thấy kết quả video thứ " + result + " trên màn hình.");
+            }
+            return;
+        }
+        switch (command) {
+            case "tạm dừng", "dừng video" -> playback(root, true);
+            case "phát tiếp", "tiếp tục phát" -> playback(root, false);
+            default -> message("Thử nói “Mở kết quả thứ hai”, “Tạm dừng” hoặc “Phát tiếp”.");
+        }
+    }
+
+    private void playback(AccessibilityNodeInfo root, boolean pause) {
+        if (YouTubeControls.playback(root, pause)) return;
+        if (!YouTubeControls.revealPlayer(root)) {
+            message("Chưa thấy nút điều khiển của video.");
+            return;
+        }
+        handler.postDelayed(() -> {
+            AccessibilityNodeInfo current = getRootInActiveWindow();
+            if (!isYouTube(current) || getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
+            if (!YouTubeControls.playback(current, pause)) {
+                message("Chưa thấy nút điều khiển của video.");
+            }
+        }, 350);
     }
 
     private void nextVideo() {
@@ -126,6 +159,7 @@ public final class TikTokService extends AccessibilityService {
     }
 
     @Override public void onInterrupt() {
+        handler.removeCallbacksAndMessages(null);
         if (voice != null) voice.close();
         removeControl();
     }

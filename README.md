@@ -12,7 +12,7 @@ Trợ lý giọng nói tiếng Việt cho Android. Bản thử nghiệm hiện t
 
 - Trong Jovi, chạm **Nói với Jovi** rồi nói “Jovi, tìm bài hát Believer trên YouTube”.
 - Trong YouTube, bật dịch vụ Trợ năng **Jovi cho TikTok và YouTube**, chạm nút **Jovi** rồi nói “Tìm video cách pha cà phê”.
-- YouTube mở màn hình kết quả. Bạn chọn video muốn phát.
+- YouTube mở màn hình kết quả. Chạm **Jovi** rồi nói “Mở kết quả thứ hai” để mở video thứ hai đang hiển thị. Khi đang xem, chạm nút **Jovi** và nói “Tạm dừng” hoặc “Phát tiếp”.
 
 ## Phạm vi phát triển
 
