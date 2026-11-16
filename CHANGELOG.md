@@ -1,5 +1,10 @@
 # Bản vá Jovi
 
+## 0.4
+
+- Giao diện chính xanh dương nhạt, nút “Nói với Jovi” nổi bật và trạng thái micrô hiển thị ngay phía trên.
+- Thêm lệnh mẫu và lối vào cài đặt Trợ năng ngay trên màn hình chính.
+
 ## 0.3
 
 - Chọn một video đang hiện trên màn hình YouTube bằng lệnh “Mở kết quả thứ hai” hoặc “Phát video hai”.
