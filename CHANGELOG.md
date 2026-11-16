@@ -1,5 +1,9 @@
 # Bản vá Jovi
 
+## 0.4.1
+
+- Đặt lại trạng thái micrô khi rời màn hình Jovi trong lúc đang nghe.
+
 ## 0.4
 
 - Giao diện chính xanh dương nhạt, nút “Nói với Jovi” nổi bật và trạng thái micrô hiển thị ngay phía trên.

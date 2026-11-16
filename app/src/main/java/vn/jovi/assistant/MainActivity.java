@@ -17,6 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
+    private static final String READY = "Chạm nút bên dưới để nói lệnh.";
+    private static final String LISTENING = "Đang nghe…";
     private TextView status;
     private VoiceInput voice;
 
@@ -42,7 +44,7 @@ public final class MainActivity extends Activity {
         layout.addView(label("Trợ lý giọng nói", 16, 0xff345878, false));
 
         LinearLayout voiceCard = card(layout, 24, 0xffd7ecff);
-        status = label("Chạm nút bên dưới để nói lệnh.", 16, 0xff25496c, false);
+        status = label(READY, 16, 0xff25496c, false);
         status.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);
         voiceCard.addView(status);
 
@@ -127,7 +129,7 @@ public final class MainActivity extends Activity {
 
     private void startListening() {
         if (voice == null) voice = new VoiceInput(this);
-        status.setText("Đang nghe…");
+        status.setText(LISTENING);
         voice.listen(this::runCommand, status::setText);
     }
 
@@ -167,6 +169,7 @@ public final class MainActivity extends Activity {
             voice.close();
             voice = null;
         }
+        if (LISTENING.contentEquals(status.getText())) status.setText(READY);
         super.onStop();
     }
 }
