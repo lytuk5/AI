@@ -1,12 +1,18 @@
 # Jovi
 
-Trợ lý giọng nói tiếng Việt cho Android. Bản thử nghiệm hiện tại hỗ trợ lệnh mở TikTok, Messenger, Zalo, WhatsApp và ứng dụng SMS.
+Trợ lý giọng nói tiếng Việt cho Android. Bản thử nghiệm hiện tại hỗ trợ lệnh mở TikTok, YouTube, Messenger, Zalo, WhatsApp và ứng dụng SMS.
 
 ## Thử TikTok
 
 1. Mở Jovi, chạm **Nói với Jovi** và cấp quyền micrô.
-2. Chọn **Cài đặt điều khiển TikTok** và bật dịch vụ **Jovi cho TikTok**.
+2. Chọn **Cài đặt điều khiển TikTok và YouTube** và bật dịch vụ **Jovi cho TikTok và YouTube**.
 3. Nói “Jovi, mở TikTok”. Khi đang ở bảng tin TikTok, chạm nút **Jovi** rồi nói “Video tiếp theo” để vuốt lên.
+
+## Tìm trên YouTube
+
+- Trong Jovi, chạm **Nói với Jovi** rồi nói “Jovi, tìm bài hát Believer trên YouTube”.
+- Trong YouTube, bật dịch vụ Trợ năng **Jovi cho TikTok và YouTube**, chạm nút **Jovi** rồi nói “Tìm video cách pha cà phê”.
+- YouTube mở màn hình kết quả. Bạn chọn video muốn phát.
 
 ## Phạm vi phát triển
 

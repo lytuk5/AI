@@ -4,6 +4,7 @@
         <intent><action android:name="android.speech.RecognitionService"/></intent>
         <package android:name="com.zhiliaoapp.musically"/>
         <package android:name="com.ss.android.ugc.trill"/>
+        <package android:name="com.google.android.youtube"/>
         <package android:name="com.facebook.orca"/>
         <package android:name="com.zing.zalo"/>
         <package android:name="com.whatsapp"/>
@@ -15,7 +16,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <service android:name=".TikTokService" android:label="Jovi cho TikTok"
+        <service android:name=".TikTokService" android:label="Jovi cho TikTok và YouTube"
                  android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/tiktok_service"/>

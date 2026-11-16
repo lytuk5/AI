@@ -39,7 +39,7 @@ public final class MainActivity extends Activity {
         });
         layout.addView(listen);
         Button setup = new Button(this);
-        setup.setText("Cài đặt điều khiển TikTok");
+        setup.setText("Cài đặt điều khiển TikTok và YouTube");
         setup.setOnClickListener(view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         layout.addView(setup);
         setContentView(layout);
@@ -59,6 +59,7 @@ public final class MainActivity extends Activity {
     }
 
     private void runCommand(String phrase) {
+        if (YouTubeSearch.handle(this, phrase, status::setText)) return;
         String command = VoiceInput.command(phrase);
         if (command.equals("mở tin nhắn") || command.equals("mở sms")) {
             Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
@@ -71,6 +72,7 @@ public final class MainActivity extends Activity {
         }
         String[] packages = switch (command) {
             case "mở tiktok", "vào tiktok" -> TikTokService.PACKAGES;
+            case "mở youtube", "vào youtube" -> new String[]{YouTubeSearch.PACKAGE};
             case "mở messenger", "mở mess" -> new String[]{"com.facebook.orca"};
             case "mở zalo" -> new String[]{"com.zing.zalo"};
             case "mở whatsapp", "mở whats app" -> new String[]{"com.whatsapp"};

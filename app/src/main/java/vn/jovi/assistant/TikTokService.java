@@ -36,10 +36,19 @@ public final class TikTokService extends AccessibilityService {
                 && Arrays.asList(PACKAGES).contains(root.getPackageName().toString());
     }
 
+    private boolean isYouTube(AccessibilityNodeInfo root) {
+        CharSequence name = root == null ? null : root.getPackageName();
+        return name != null && YouTubeSearch.PACKAGE.contentEquals(name);
+    }
+
+    private boolean isSupported(AccessibilityNodeInfo root) {
+        return isTikTok(root) || isYouTube(root);
+    }
+
     private void showControl() {
-        // The accessibility shortcut is shown only while a TikTok window is active.
+        // The accessibility shortcut is shown only while a supported app is active.
         AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (!isTikTok(root) || control != null) return;
+        if (!isSupported(root) || control != null) return;
         control = new Button(this);
         control.setText("Jovi");
         control.setOnClickListener(view -> listen());
@@ -55,7 +64,7 @@ public final class TikTokService extends AccessibilityService {
     private final Runnable presenceCheck = new Runnable() {
         @Override public void run() {
             if (control == null) return;
-            if (isTikTok(getRootInActiveWindow())) {
+            if (isSupported(getRootInActiveWindow())) {
                 control.postDelayed(this, 300);
             } else {
                 voice.close();
@@ -65,13 +74,22 @@ public final class TikTokService extends AccessibilityService {
     };
 
     private void listen() {
-        if (!isTikTok(getRootInActiveWindow())) return;
+        if (!isSupported(getRootInActiveWindow())) return;
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             message("Mở Jovi để cấp quyền micrô trước.");
             return;
         }
         message("Đang nghe…");
         voice.listen(phrase -> {
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
+            if (isYouTube(root)) {
+                if (!YouTubeSearch.handle(this, phrase, this::message)) {
+                    message("Thử nói “Tìm bài hát Believer”.");
+                }
+                return;
+            }
+            if (!isTikTok(root)) return;
             switch (VoiceInput.command(phrase)) {
                 case "video tiếp theo", "lướt lên", "lướt sang video tiếp theo",
                      "lướt qua video tiếp theo", "lướt lên video tiếp theo" -> nextVideo();
