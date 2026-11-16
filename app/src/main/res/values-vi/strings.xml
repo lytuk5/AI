@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ready">Chạm nút bên dưới để nói lệnh.</string>
+    <string name="listening">Đang nghe…</string>
+    <string name="subtitle">Trợ lý giọng nói</string>
+    <string name="listen">Nói với Jovi</string>
+    <string name="examples">Lệnh mẫu</string>
+    <string name="example_tiktok">“Mở TikTok”</string>
+    <string name="example_youtube">“Tìm bài hát Believer trên YouTube”</string>
+    <string name="controls">Điều khiển trong ứng dụng</string>
+    <string name="accessibility_hint">Bật Trợ năng để hiện nút Jovi trong TikTok và YouTube.</string>
+    <string name="accessibility_button">Mở cài đặt Trợ năng</string>
+    <string name="accessibility_service">Jovi cho TikTok và YouTube</string>
+    <string name="no_sms">Máy chưa có ứng dụng SMS.</string>
+    <string name="opened">Đã mở ứng dụng.</string>
+    <string name="unsupported">Jovi chưa hỗ trợ lệnh này.</string>
+    <string name="app_missing">Chưa tìm thấy ứng dụng.</string>
+    <string name="recognizer_missing">Máy chưa có dịch vụ nhận dạng giọng nói.</string>
+    <string name="no_command">Chưa nhận được lệnh. Bạn thử lại nhé.</string>
+    <string name="search_prompt">Bạn muốn tìm bài hát hoặc video nào?</string>
+    <string name="search_failed">Không mở được tìm kiếm trong YouTube.</string>
+    <string name="permission_hint">Mở Jovi để cấp quyền micrô trước.</string>
+    <string name="next_hint">Bạn có thể nói “video tiếp theo”.</string>
+    <string name="result_missing">Chưa thấy kết quả video thứ %1$d trên màn hình.</string>
+    <string name="youtube_hint">Thử nói “Mở kết quả thứ hai”, “Tạm dừng” hoặc “Phát tiếp”.</string>
+    <string name="player_missing">Chưa thấy nút điều khiển của video.</string>
+    <string name="swipe_failed">Chưa lướt được trên TikTok.</string>
+    <string name="language">Ngôn ngữ · Language</string>
+</resources>

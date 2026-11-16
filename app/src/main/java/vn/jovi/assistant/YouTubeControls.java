@@ -13,17 +13,17 @@ import java.util.regex.Pattern;
 
 final class YouTubeControls {
     private static final Pattern RESULT = Pattern.compile(
-            "^(?:mở|phát) (?:kết quả|video) (?:thứ )?(nhất|hai|ba|tư|bốn|năm|[1-5])$");
+            "^(?:(?:mở|phát) (?:kết quả|video) (?:thứ )?|(?:open|play) (?:the )?)(nhất|hai|ba|tư|bốn|năm|first|second|third|fourth|fifth|[1-5])(?: (?:result|video))?$");
     private static final String ID = YouTubeSearch.PACKAGE + ":id/";
 
     static int resultNumber(String command) {
         Matcher match = RESULT.matcher(command);
         if (!match.matches()) return 0;
         return switch (match.group(1)) {
-            case "nhất", "1" -> 1;
-            case "hai", "2" -> 2;
-            case "ba", "3" -> 3;
-            case "tư", "bốn", "4" -> 4;
+            case "first", "nhất", "1" -> 1;
+            case "second", "hai", "2" -> 2;
+            case "third", "ba", "3" -> 3;
+            case "fourth", "tư", "bốn", "4" -> 4;
             default -> 5;
         };
     }

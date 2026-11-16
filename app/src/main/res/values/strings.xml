@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ready">Tap below to speak a command.</string>
+    <string name="listening">Listening…</string>
+    <string name="subtitle">Voice assistant</string>
+    <string name="listen">Talk to Jovi</string>
+    <string name="examples">Example commands</string>
+    <string name="example_tiktok">“Open TikTok”</string>
+    <string name="example_youtube">“Find the song Believer on YouTube”</string>
+    <string name="controls">In-app controls</string>
+    <string name="accessibility_hint">Enable Accessibility to show the Jovi button in TikTok and YouTube.</string>
+    <string name="accessibility_button">Open Accessibility settings</string>
+    <string name="accessibility_service">Jovi for TikTok and YouTube</string>
+    <string name="no_sms">No SMS app is available.</string>
+    <string name="opened">App opened.</string>
+    <string name="unsupported">Jovi does not support this command yet.</string>
+    <string name="app_missing">App not found.</string>
+    <string name="recognizer_missing">Speech recognition is unavailable on this device.</string>
+    <string name="no_command">No command recognized. Please try again.</string>
+    <string name="search_prompt">Which song or video would you like to find?</string>
+    <string name="search_failed">Could not open YouTube search.</string>
+    <string name="permission_hint">Open Jovi to grant microphone access first.</string>
+    <string name="next_hint">You can say “next video”.</string>
+    <string name="result_missing">Video result %1$d is not visible on the screen.</string>
+    <string name="youtube_hint">Try “Open the second result”, “Pause” or “Resume”.</string>
+    <string name="player_missing">Video controls are unavailable.</string>
+    <string name="swipe_failed">Could not swipe in TikTok.</string>
+    <string name="language">Language · Ngôn ngữ</string>
+</resources>

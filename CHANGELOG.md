@@ -1,5 +1,11 @@
 # Bản vá Jovi
 
+## 0.5
+
+- Giao diện, thông báo và các lệnh hiện có của Jovi hỗ trợ tiếng Việt và tiếng Anh.
+- Trên Android 13 trở lên, mở **Ngôn ngữ · Language** để chọn ngôn ngữ riêng cho Jovi. Trên Android cũ hơn, Jovi theo ngôn ngữ hệ thống.
+- Jovi dùng ngôn ngữ đã chọn để nhận dạng giọng nói. Hộp thoại Android và giao diện ứng dụng khác theo cài đặt của từng ứng dụng hoặc hệ thống.
+
 ## 0.4.1
 
 - Đặt lại trạng thái micrô khi rời màn hình Jovi trong lúc đang nghe.

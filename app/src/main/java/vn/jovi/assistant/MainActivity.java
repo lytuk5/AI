@@ -17,8 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
-    private static final String READY = "Chạm nút bên dưới để nói lệnh.";
-    private static final String LISTENING = "Đang nghe…";
+
+
     private TextView status;
     private VoiceInput voice;
 
@@ -41,14 +41,14 @@ public final class MainActivity extends Activity {
         });
 
         layout.addView(label("Jovi", 44, 0xff123358, true));
-        layout.addView(label("Trợ lý giọng nói", 16, 0xff345878, false));
+        layout.addView(label(getString(R.string.subtitle), 16, 0xff345878, false));
 
         LinearLayout voiceCard = card(layout, 24, 0xffd7ecff);
-        status = label(READY, 16, 0xff25496c, false);
+        status = label(getString(R.string.ready), 16, 0xff25496c, false);
         status.setAccessibilityLiveRegion(android.view.View.ACCESSIBILITY_LIVE_REGION_POLITE);
         voiceCard.addView(status);
 
-        Button listen = action("Nói với Jovi", 0xff1761ae, 0xffffffff);
+        Button listen = action(getString(R.string.listen), 0xff1761ae, 0xffffffff);
         LinearLayout.LayoutParams listenSize = new LinearLayout.LayoutParams(-1, -2);
         listenSize.topMargin = dp(16);
         voiceCard.addView(listen, listenSize);
@@ -61,18 +61,26 @@ public final class MainActivity extends Activity {
         });
 
         LinearLayout examples = card(layout, 16, 0xffffffff);
-        examples.addView(label("Lệnh mẫu", 18, 0xff123358, true));
-        examples.addView(label("“Mở TikTok”", 16, 0xff345878, false));
-        examples.addView(label("“Tìm bài hát Believer trên YouTube”", 16, 0xff345878, false));
+        examples.addView(label(getString(R.string.examples), 18, 0xff123358, true));
+        examples.addView(label(getString(R.string.example_tiktok), 16, 0xff345878, false));
+        examples.addView(label(getString(R.string.example_youtube), 16, 0xff345878, false));
 
         LinearLayout settings = card(layout, 16, 0xffffffff);
-        settings.addView(label("Điều khiển trong ứng dụng", 18, 0xff123358, true));
-        settings.addView(label("Bật Trợ năng để hiện nút Jovi trong TikTok và YouTube.", 15, 0xff345878, false));
-        Button setup = action("Mở cài đặt Trợ năng", 0xffd7ecff, 0xff123358);
+        settings.addView(label(getString(R.string.controls), 18, 0xff123358, true));
+        settings.addView(label(getString(R.string.accessibility_hint), 15, 0xff345878, false));
+        Button setup = action(getString(R.string.accessibility_button), 0xffd7ecff, 0xff123358);
         LinearLayout.LayoutParams setupSize = new LinearLayout.LayoutParams(-1, -2);
         setupSize.topMargin = dp(12);
         settings.addView(setup, setupSize);
         setup.setOnClickListener(view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            Button language = action(getString(R.string.language), 0xffd7ecff, 0xff123358);
+            LinearLayout.LayoutParams size = new LinearLayout.LayoutParams(-1, -2);
+            size.topMargin = dp(12);
+            settings.addView(language, size);
+            language.setOnClickListener(view -> startActivity(new Intent(
+                    Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + getPackageName()))));
+        }
         setContentView(scroll);
     }
 
@@ -129,39 +137,39 @@ public final class MainActivity extends Activity {
 
     private void startListening() {
         if (voice == null) voice = new VoiceInput(this);
-        status.setText(LISTENING);
+        status.setText(R.string.listening);
         voice.listen(this::runCommand, status::setText);
     }
 
     private void runCommand(String phrase) {
         if (YouTubeSearch.handle(this, phrase, status::setText)) return;
         String command = VoiceInput.command(phrase);
-        if (command.equals("mở tin nhắn") || command.equals("mở sms")) {
+        if (command.equals("mở tin nhắn") || command.equals("mở sms") || command.equals("open sms") || command.equals("open messages")) {
             Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
             try {
                 startActivity(sms);
             } catch (android.content.ActivityNotFoundException error) {
-                status.setText("Máy chưa có ứng dụng SMS.");
+                status.setText(getString(R.string.no_sms));
             }
             return;
         }
         String[] packages = switch (command) {
-            case "mở tiktok", "vào tiktok" -> TikTokService.PACKAGES;
-            case "mở youtube", "vào youtube" -> new String[]{YouTubeSearch.PACKAGE};
-            case "mở messenger", "mở mess" -> new String[]{"com.facebook.orca"};
+            case "mở tiktok", "open tiktok", "vào tiktok" -> TikTokService.PACKAGES;
+            case "mở youtube", "open youtube", "vào youtube" -> new String[]{YouTubeSearch.PACKAGE};
+            case "mở messenger", "open messenger", "mở mess" -> new String[]{"com.facebook.orca"};
             case "mở zalo" -> new String[]{"com.zing.zalo"};
-            case "mở whatsapp", "mở whats app" -> new String[]{"com.whatsapp"};
+            case "mở whatsapp", "open whatsapp", "mở whats app" -> new String[]{"com.whatsapp"};
             default -> new String[0];
         };
         for (String name : packages) {
             Intent launch = getPackageManager().getLaunchIntentForPackage(name);
             if (launch != null) {
                 startActivity(launch);
-                status.setText("Đã mở ứng dụng.");
+                status.setText(getString(R.string.opened));
                 return;
             }
         }
-        status.setText(packages.length == 0 ? "Jovi chưa hỗ trợ lệnh này." : "Chưa tìm thấy ứng dụng.");
+        status.setText(packages.length == 0 ? getString(R.string.unsupported) : getString(R.string.app_missing));
     }
 
     @Override protected void onStop() {
@@ -169,7 +177,7 @@ public final class MainActivity extends Activity {
             voice.close();
             voice = null;
         }
-        if (LISTENING.contentEquals(status.getText())) status.setText(READY);
+        if (getString(R.string.listening).contentEquals(status.getText())) status.setText(R.string.ready);
         super.onStop();
     }
 }

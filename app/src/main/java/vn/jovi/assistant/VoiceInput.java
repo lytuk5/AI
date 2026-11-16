@@ -22,7 +22,7 @@ final class VoiceInput {
     void listen(Consumer<String> result, Consumer<String> error) {
         close();
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            error.accept("Máy chưa có dịch vụ nhận dạng giọng nói.");
+            error.accept(context.getString(R.string.recognizer_missing));
             return;
         }
         recognizer = SpeechRecognizer.createSpeechRecognizer(context);
@@ -35,12 +35,12 @@ final class VoiceInput {
             @Override public void onPartialResults(Bundle extras) {}
             @Override public void onEvent(int type, Bundle extras) {}
             @Override public void onError(int code) {
-                error.accept("Chưa nhận được lệnh. Bạn thử lại nhé.");
+                error.accept(context.getString(R.string.no_command));
             }
             @Override public void onResults(Bundle extras) {
                 ArrayList<String> phrases = extras.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (phrases == null || phrases.isEmpty()) {
-                    error.accept("Chưa nhận được lệnh. Bạn thử lại nhé.");
+                    error.accept(context.getString(R.string.no_command));
                 } else {
                     result.accept(phrases.get(0));
                 }
@@ -48,7 +48,7 @@ final class VoiceInput {
         });
         Intent request = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "vi-VN");
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, context.getResources().getConfiguration().getLocales().get(0).getLanguage().equals("vi") ? "vi-VN" : "en-US");
         recognizer.startListening(request);
     }
 

@@ -13,8 +13,8 @@ final class YouTubeSearch {
     static final String PACKAGE = "com.google.android.youtube";
     private static final int FLAGS = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
     private static final Pattern REQUEST = Pattern.compile(
-            "^(?:jovi[\\s,]+)?tìm(?: kiếm)?(?: bài hát| video| bài nhạc)?(?:\\s+(.+?))?[.!?]*$", FLAGS);
-    private static final Pattern PLATFORM = Pattern.compile("(?:^|\\s+)(?:trên|ở) youtube$", FLAGS);
+            "^(?:jovi[\\s,]+)?(?:tìm(?: kiếm)?(?: bài hát| video| bài nhạc)?|(?:find|search(?: for)?)(?: (?:the )?(?:song|video))?)(?:\\s+(.+?))?[.!?]*$", FLAGS);
+    private static final Pattern PLATFORM = Pattern.compile("(?:^|\\s+)(?:trên|ở|on) youtube$", FLAGS);
 
     static boolean handle(Context context, String phrase, Consumer<String> feedback) {
         Matcher request = REQUEST.matcher(phrase.trim());
@@ -23,7 +23,7 @@ final class YouTubeSearch {
         String query = request.group(1);
         if (query != null) query = PLATFORM.matcher(query).replaceFirst("").trim();
         if (query == null || query.isEmpty()) {
-            feedback.accept("Bạn muốn tìm bài hát hoặc video nào?");
+            feedback.accept(context.getString(R.string.search_prompt));
             return true;
         }
 
@@ -34,7 +34,7 @@ final class YouTubeSearch {
         try {
             context.startActivity(search);
         } catch (ActivityNotFoundException | SecurityException error) {
-            feedback.accept("Không mở được tìm kiếm trong YouTube.");
+            feedback.accept(context.getString(R.string.search_failed));
         }
         return true;
     }

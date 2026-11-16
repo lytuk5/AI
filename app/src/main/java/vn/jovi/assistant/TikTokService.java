@@ -79,10 +79,10 @@ public final class TikTokService extends AccessibilityService {
     private void listen() {
         if (!isSupported(getRootInActiveWindow())) return;
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            message("Mở Jovi để cấp quyền micrô trước.");
+            message(getString(R.string.permission_hint));
             return;
         }
-        message("Đang nghe…");
+        message(getString(R.string.listening));
         voice.listen(phrase -> {
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
@@ -92,9 +92,9 @@ public final class TikTokService extends AccessibilityService {
             }
             if (!isTikTok(root)) return;
             switch (VoiceInput.command(phrase)) {
-                case "video tiếp theo", "lướt lên", "lướt sang video tiếp theo",
+                case "next video", "swipe up", "video tiếp theo", "lướt lên", "lướt sang video tiếp theo",
                      "lướt qua video tiếp theo", "lướt lên video tiếp theo" -> nextVideo();
-                default -> message("Bạn có thể nói “video tiếp theo”.");
+                default -> message(getString(R.string.next_hint));
             }
         }, this::message);
     }
@@ -105,28 +105,28 @@ public final class TikTokService extends AccessibilityService {
         int result = YouTubeControls.resultNumber(command);
         if (result != 0) {
             if (!YouTubeControls.openResult(root, result)) {
-                message("Chưa thấy kết quả video thứ " + result + " trên màn hình.");
+                message(getString(R.string.result_missing, result));
             }
             return;
         }
         switch (command) {
-            case "tạm dừng", "dừng video" -> playback(root, true);
-            case "phát tiếp", "tiếp tục phát" -> playback(root, false);
-            default -> message("Thử nói “Mở kết quả thứ hai”, “Tạm dừng” hoặc “Phát tiếp”.");
+            case "pause", "pause video", "tạm dừng", "dừng video" -> playback(root, true);
+            case "resume", "resume playback", "phát tiếp", "tiếp tục phát" -> playback(root, false);
+            default -> message(getString(R.string.youtube_hint));
         }
     }
 
     private void playback(AccessibilityNodeInfo root, boolean pause) {
         if (YouTubeControls.playback(root, pause)) return;
         if (!YouTubeControls.revealPlayer(root)) {
-            message("Chưa thấy nút điều khiển của video.");
+            message(getString(R.string.player_missing));
             return;
         }
         handler.postDelayed(() -> {
             AccessibilityNodeInfo current = getRootInActiveWindow();
             if (!isYouTube(current) || getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
             if (!YouTubeControls.playback(current, pause)) {
-                message("Chưa thấy nút điều khiển của video.");
+                message(getString(R.string.player_missing));
             }
         }, 350);
     }
@@ -143,7 +143,7 @@ public final class TikTokService extends AccessibilityService {
         swipe.lineTo(bounds.exactCenterX(), bounds.top + bounds.height() * 0.26f);
         GestureDescription gesture = new GestureDescription.Builder()
                 .addStroke(new GestureDescription.StrokeDescription(swipe, 0, 300)).build();
-        if (!dispatchGesture(gesture, null, null)) message("Chưa lướt được trên TikTok.");
+        if (!dispatchGesture(gesture, null, null)) message(getString(R.string.swipe_failed));
     }
 
     private void message(String text) {
