@@ -30,4 +30,9 @@
     <string name="choose_apps">Chọn ứng dụng Jovi được phép dùng</string>
     <string name="save_access">Lưu và tiếp tục</string>
     <string name="access_required">Hãy cho phép ứng dụng này trong mục Thiết lập Jovi.</string>
+    <string name="voice_timeout">Dịch vụ nhận dạng không phản hồi. Hãy kiểm tra dịch vụ giọng nói rồi thử lại.</string><string name="voice_network">Không kết nối được dịch vụ nhận dạng. Hãy kiểm tra mạng rồi thử lại.</string>
+    <string name="system_voice">Dùng nhập giọng nói Android</string>
+    <string name="app_name">Jovi</string>
+    <string name="voice_language">Ngôn ngữ nhận dạng chưa có. Hãy kiểm tra cài đặt giọng nói.</string>
+    <string name="voice_busy">Dịch vụ nhận dạng đang bận hoặc không khả dụng. Hãy thử nhập giọng nói Android.</string>
 </resources>

@@ -1,5 +1,21 @@
 # Bản vá Jovi
 
+## 1.0
+
+- Nút Jovi cập nhật theo sự kiện cửa sổ và bỏ kiểm tra lặp mỗi 300 ms.
+- Chuẩn hóa lệnh, thêm biến thể tên Jovi, giới hạn lệnh tìm kiếm vào đúng ngữ cảnh YouTube.
+- Lọc kết quả video trùng, sắp theo vị trí và thử lại khi trình phát chưa hiện nút.
+- Báo riêng lỗi ngôn ngữ, mạng và dịch vụ nhận dạng. Giữ lựa chọn ứng dụng đã lưu khi nâng cấp.
+- Tích hợp avatar và phương án nhập giọng nói Android từ các bản thử.
+
+## 0.6.2
+
+- Thêm nút dùng hộp thoại nhập giọng nói Android.
+
+## 0.6.1
+
+- Kết thúc phiên nghe nếu dịch vụ nhận dạng không phản hồi.
+
 ## 0.6
 
 - Màn hình thiết lập lần đầu cho phép chọn từng ứng dụng, sau đó mở hộp thoại cấp quyền micrô của Android.

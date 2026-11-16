@@ -9,7 +9,7 @@
         <package android:name="com.zing.zalo"/>
         <package android:name="com.whatsapp"/>
     </queries>
-    <application android:localeConfig="@xml/locales" android:label="Jovi" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false">
+    <application android:localeConfig="@xml/locales" android:label="@string/app_name" android:icon="@drawable/jovi_avatar" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

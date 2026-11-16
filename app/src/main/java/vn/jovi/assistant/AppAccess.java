@@ -6,34 +6,46 @@ import android.content.Context;
 
 final class AppAccess {
     private static final String[] APPS = {"TikTok", "YouTube", "Messenger", "Zalo", "WhatsApp", "SMS"};
-    private static final int ALL = (1 << APPS.length) - 1;
+    private static final String[] LEGACY_ORDER = {"TikTok", "YouTube", "Messenger", "Zalo", "WhatsApp", "SMS"};
+    private static final String ALLOWED = "allowed_apps";
+
+    private static java.util.Set<String> selected(android.content.SharedPreferences preferences) {
+        var saved = preferences.getStringSet(ALLOWED, null);
+        if (saved != null) return saved;
+        var migrated = new java.util.HashSet<String>();
+        int mask = preferences.getInt("selected", 0);
+        for (int i = 0; i < LEGACY_ORDER.length; i++) {
+            if ((mask & (1 << i)) != 0) migrated.add(LEGACY_ORDER[i]);
+        }
+        if (preferences.contains("selected")) {
+            preferences.edit().putStringSet(ALLOWED, migrated).remove("selected").apply();
+        }
+        return migrated;
+    }
 
     static boolean allows(Context context, String app) {
-        int selected = context.getSharedPreferences("app_access", Context.MODE_PRIVATE).getInt("selected", 0);
-        for (int i = 0; i < APPS.length; i++) {
-            if (APPS[i].equals(app)) return (selected & (1 << i)) != 0;
-        }
-        return false;
+        return selected(context.getSharedPreferences("app_access", Context.MODE_PRIVATE)).contains(app);
     }
 
     static boolean configured(Context context) {
-        return context.getSharedPreferences("app_access", Context.MODE_PRIVATE).contains("selected");
+        var preferences = context.getSharedPreferences("app_access", Context.MODE_PRIVATE);
+        return preferences.contains(ALLOWED) || preferences.contains("selected");
     }
 
     static void choose(Activity activity, Runnable complete) {
         var preferences = activity.getSharedPreferences("app_access", Context.MODE_PRIVATE);
-        int[] selected = {preferences.getInt("selected", 0)};
+        var selected = new java.util.HashSet<>(selected(preferences));
         boolean[] checked = new boolean[APPS.length];
-        for (int i = 0; i < APPS.length; i++) checked[i] = (selected[0] & (1 << i)) != 0;
+        for (int i = 0; i < APPS.length; i++) checked[i] = selected.contains(APPS[i]);
         new AlertDialog.Builder(activity)
                 .setTitle(R.string.choose_apps)
                 .setMultiChoiceItems(APPS, checked, (dialog, item, allowed) -> {
-                    int bit = 1 << item;
-                    selected[0] = allowed ? selected[0] | bit : selected[0] & ~bit;
+                    if (allowed) selected.add(APPS[item]);
+                    else selected.remove(APPS[item]);
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.save_access, (dialog, which) -> {
-                    preferences.edit().putInt("selected", selected[0] & ALL).apply();
+                    preferences.edit().putStringSet(ALLOWED, selected).apply();
                     complete.run();
                 })
                 .show();

@@ -30,4 +30,9 @@
     <string name="choose_apps">Choose apps Jovi may access</string>
     <string name="save_access">Save and continue</string>
     <string name="access_required">Allow this app in Set up Jovi first.</string>
+    <string name="voice_timeout">Speech recognition did not respond. Check your voice service and try again.</string><string name="voice_network">Speech recognition could not connect. Check your network and try again.</string>
+    <string name="system_voice">Use Android voice input</string>
+    <string name="app_name">Jovi</string>
+    <string name="voice_language">This speech language is unavailable. Check your voice settings.</string>
+    <string name="voice_busy">The speech service is busy or unavailable. Try Android voice input.</string>
 </resources>

@@ -27,11 +27,11 @@ public final class TikTokService extends AccessibilityService {
 
     @Override protected void onServiceConnected() {
         voice = new VoiceInput(this);
-        showControl();
+        scheduleWindowCheck();
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
-        showControl();
+        scheduleWindowCheck();
     }
 
     private boolean isTikTok(AccessibilityNodeInfo root) {
@@ -48,33 +48,38 @@ public final class TikTokService extends AccessibilityService {
         return isTikTok(root) || isYouTube(root);
     }
 
+    private final Runnable windowCheck = () -> {
+        if (isSupported(getRootInActiveWindow()) && getSystemService(PowerManager.class).isInteractive()
+                && !getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) {
+            showControl();
+        } else {
+            if (voice != null) voice.close();
+            removeControl();
+        }
+    };
+
+    private void scheduleWindowCheck() {
+        handler.removeCallbacks(windowCheck);
+        handler.postDelayed(windowCheck, 180);
+    }
+
     private void showControl() {
-        // The accessibility shortcut is shown only while a supported app is active.
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (!isSupported(root) || control != null) return;
-        control = new Button(this);
-        control.setText("Jovi");
-        control.setOnClickListener(view -> listen());
+        if (control != null) return;
+        Button button = new Button(this);
+        button.setText(R.string.app_name);
+        button.setOnClickListener(view -> listen());
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE, PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.END;
-        getSystemService(WindowManager.class).addView(control, params);
-        control.postDelayed(presenceCheck, 300);
-    }
-
-    private final Runnable presenceCheck = new Runnable() {
-        @Override public void run() {
-            if (control == null) return;
-            if (isSupported(getRootInActiveWindow())) {
-                control.postDelayed(this, 300);
-            } else {
-                voice.close();
-                removeControl();
-            }
+        try {
+            getSystemService(WindowManager.class).addView(button, params);
+            control = button;
+        } catch (WindowManager.BadTokenException | WindowManager.InvalidDisplayException error) {
+            android.util.Log.w("Jovi", "Could not attach voice control", error);
         }
-    };
+    }
 
     private void listen() {
         if (!isSupported(getRootInActiveWindow())) return;
@@ -100,7 +105,7 @@ public final class TikTokService extends AccessibilityService {
     }
 
     private void handleYouTube(AccessibilityNodeInfo root, String phrase) {
-        if (YouTubeSearch.handle(this, phrase, this::message)) return;
+        if (YouTubeSearch.handle(this, phrase, true, this::message)) return;
         String command = VoiceInput.command(phrase);
         int result = YouTubeControls.resultNumber(command);
         if (result != 0) {
@@ -122,13 +127,18 @@ public final class TikTokService extends AccessibilityService {
             message(getString(R.string.player_missing));
             return;
         }
+        retryPlayback(root.getWindowId(), pause, 4);
+    }
+
+    private void retryPlayback(int windowId, boolean pause, int remaining) {
         handler.postDelayed(() -> {
             AccessibilityNodeInfo current = getRootInActiveWindow();
-            if (!isYouTube(current) || getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
-            if (!YouTubeControls.playback(current, pause)) {
-                message(getString(R.string.player_missing));
-            }
-        }, 350);
+            if (!isYouTube(current) || current.getWindowId() != windowId
+                    || getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
+            if (YouTubeControls.playback(current, pause)) return;
+            if (remaining > 1) retryPlayback(windowId, pause, remaining - 1);
+            else message(getString(R.string.player_missing));
+        }, 200);
     }
 
     private void nextVideo() {
@@ -142,7 +152,7 @@ public final class TikTokService extends AccessibilityService {
         swipe.moveTo(bounds.exactCenterX(), bounds.top + bounds.height() * 0.77f);
         swipe.lineTo(bounds.exactCenterX(), bounds.top + bounds.height() * 0.26f);
         GestureDescription gesture = new GestureDescription.Builder()
-                .addStroke(new GestureDescription.StrokeDescription(swipe, 0, 300)).build();
+                .addStroke(new GestureDescription.StrokeDescription(swipe, 0, 190)).build();
         if (!dispatchGesture(gesture, null, null)) message(getString(R.string.swipe_failed));
     }
 
@@ -152,8 +162,11 @@ public final class TikTokService extends AccessibilityService {
 
     private void removeControl() {
         if (control != null) {
-            control.removeCallbacks(presenceCheck);
-            getSystemService(WindowManager.class).removeView(control);
+            try {
+                getSystemService(WindowManager.class).removeView(control);
+            } catch (IllegalArgumentException error) {
+                android.util.Log.w("Jovi", "Voice control already detached", error);
+            }
             control = null;
         }
     }

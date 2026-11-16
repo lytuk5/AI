@@ -40,6 +40,13 @@ public final class MainActivity extends Activity {
             return insets;
         });
 
+        android.widget.ImageView avatar = new android.widget.ImageView(this);
+        avatar.setImageResource(R.drawable.jovi_avatar);
+        avatar.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        avatar.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        avatar.setBackground(rounded(0xffeaf5ff));
+        avatar.setClipToOutline(true);
+        layout.addView(avatar, new LinearLayout.LayoutParams(dp(96), dp(96)));
         layout.addView(label("Jovi", 44, 0xff123358, true));
         layout.addView(label(getString(R.string.subtitle), 16, 0xff345878, false));
 
@@ -52,6 +59,9 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams listenSize = new LinearLayout.LayoutParams(-1, -2);
         listenSize.topMargin = dp(16);
         voiceCard.addView(listen, listenSize);
+        Button systemVoice = action(getString(R.string.system_voice), 0xffd7ecff, 0xff123358);
+        voiceCard.addView(systemVoice, new LinearLayout.LayoutParams(-1, -2));
+        systemVoice.setOnClickListener(view -> startSystemVoice());
         listen.setOnClickListener(view -> {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 startListening();
@@ -82,10 +92,10 @@ public final class MainActivity extends Activity {
                     Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + getPackageName()))));
         }
         Button configure = action(getString(R.string.configure_jovi), 0xffd7ecff, 0xff123358);
-        voiceCard.addView(configure, listenSize);
+        voiceCard.addView(configure, new LinearLayout.LayoutParams(listenSize));
         configure.setOnClickListener(view -> configure());
         setContentView(scroll);
-        if (!AppAccess.configured(this)) configure();
+        if (state == null && !AppAccess.configured(this)) configure();
     }
 
     private void configure() {
@@ -142,9 +152,37 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
+        if ((code == 1 || code == 2) && results.length > 0 && results[0] != PackageManager.PERMISSION_GRANTED) {
+            status.setText(R.string.permission_hint);
+        }
         if (code == 1 && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
             startListening();
         }
+    }
+
+    private void startSystemVoice() {
+        Intent request = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                        android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE,
+                        getResources().getConfiguration().getLocales().get(0).getLanguage().equals("vi")
+                                ? "vi-VN" : "en-US");
+        try {
+            startActivityForResult(request, 3);
+        } catch (android.content.ActivityNotFoundException | SecurityException error) {
+            status.setText(R.string.recognizer_missing);
+        }
+    }
+
+    @Override protected void onActivityResult(int code, int result, Intent data) {
+        super.onActivityResult(code, result, data);
+        if (code != 3 || result != RESULT_OK || data == null) return;
+        var phrases = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+        if (phrases == null || phrases.isEmpty()) {
+            status.setText(R.string.no_command);
+            return;
+        }
+        runCommand(phrases.get(0));
     }
 
     private void startListening() {
@@ -154,9 +192,9 @@ public final class MainActivity extends Activity {
     }
 
     private void runCommand(String phrase) {
-        if (YouTubeSearch.handle(this, phrase, status::setText)) return;
-        String command = VoiceInput.command(phrase);
-        if (command.equals("mở tin nhắn") || command.equals("mở sms") || command.equals("open sms") || command.equals("open messages")) {
+        if (YouTubeSearch.handle(this, phrase, false, status::setText)) return;
+        String command = CommandParser.appCommand(phrase);
+        if (command.equals("open messages")) {
             if (!AppAccess.allows(this, "SMS")) {
                 status.setText(R.string.access_required);
                 return;
@@ -164,17 +202,18 @@ public final class MainActivity extends Activity {
             Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
             try {
                 startActivity(sms);
+                status.setText(R.string.opened);
             } catch (android.content.ActivityNotFoundException error) {
                 status.setText(getString(R.string.no_sms));
             }
             return;
         }
         String[] packages = switch (command) {
-            case "mở tiktok", "open tiktok", "vào tiktok" -> TikTokService.PACKAGES;
-            case "mở youtube", "open youtube", "vào youtube" -> new String[]{YouTubeSearch.PACKAGE};
-            case "mở messenger", "open messenger", "mở mess" -> new String[]{"com.facebook.orca"};
+            case "open tiktok" -> TikTokService.PACKAGES;
+            case "open youtube" -> new String[]{YouTubeSearch.PACKAGE};
+            case "open messenger" -> new String[]{"com.facebook.orca"};
             case "mở zalo" -> new String[]{"com.zing.zalo"};
-            case "mở whatsapp", "open whatsapp", "mở whats app" -> new String[]{"com.whatsapp"};
+            case "open whatsapp" -> new String[]{"com.whatsapp"};
             default -> new String[0];
         };
         for (String name : packages) {

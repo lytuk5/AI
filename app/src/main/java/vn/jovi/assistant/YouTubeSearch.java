@@ -16,15 +16,17 @@ final class YouTubeSearch {
             "^(?:jovi[\\s,]+)?(?:tìm(?: kiếm)?(?: bài hát| video| bài nhạc)?|(?:find|search(?: for)?)(?: (?:the )?(?:song|video))?)(?:\\s+(.+?))?[.!?]*$", FLAGS);
     private static final Pattern PLATFORM = Pattern.compile("(?:^|\\s+)(?:trên|ở|on) youtube$", FLAGS);
 
-    static boolean handle(Context context, String phrase, Consumer<String> feedback) {
-        Matcher request = REQUEST.matcher(phrase.trim());
+    static boolean handle(Context context, String phrase, boolean inYouTube, Consumer<String> feedback) {
+        Matcher request = REQUEST.matcher(CommandParser.stripWakeWord(phrase));
         if (!request.matches()) return false;
+
+        String query = request.group(1);
+        if (!inYouTube && (query == null || !PLATFORM.matcher(query).find())) return false;
 
         if (!AppAccess.allows(context, "YouTube")) {
             feedback.accept(context.getString(R.string.access_required));
             return true;
         }
-        String query = request.group(1);
         if (query != null) query = PLATFORM.matcher(query).replaceFirst("").trim();
         if (query == null || query.isEmpty()) {
             feedback.accept(context.getString(R.string.search_prompt));
