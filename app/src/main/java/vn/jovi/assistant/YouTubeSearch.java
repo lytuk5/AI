@@ -20,6 +20,10 @@ final class YouTubeSearch {
         Matcher request = REQUEST.matcher(phrase.trim());
         if (!request.matches()) return false;
 
+        if (!AppAccess.allows(context, "YouTube")) {
+            feedback.accept(context.getString(R.string.access_required));
+            return true;
+        }
         String query = request.group(1);
         if (query != null) query = PLATFORM.matcher(query).replaceFirst("").trim();
         if (query == null || query.isEmpty()) {

@@ -26,4 +26,8 @@
     <string name="player_missing">Chưa thấy nút điều khiển của video.</string>
     <string name="swipe_failed">Chưa lướt được trên TikTok.</string>
     <string name="language">Ngôn ngữ · Language</string>
+    <string name="configure_jovi">Thiết lập Jovi</string>
+    <string name="choose_apps">Chọn ứng dụng Jovi được phép dùng</string>
+    <string name="save_access">Lưu và tiếp tục</string>
+    <string name="access_required">Hãy cho phép ứng dụng này trong mục Thiết lập Jovi.</string>
 </resources>

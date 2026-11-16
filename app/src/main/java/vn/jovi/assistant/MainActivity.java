@@ -81,7 +81,19 @@ public final class MainActivity extends Activity {
             language.setOnClickListener(view -> startActivity(new Intent(
                     Settings.ACTION_APP_LOCALE_SETTINGS, Uri.parse("package:" + getPackageName()))));
         }
+        Button configure = action(getString(R.string.configure_jovi), 0xffd7ecff, 0xff123358);
+        voiceCard.addView(configure, listenSize);
+        configure.setOnClickListener(view -> configure());
         setContentView(scroll);
+        if (!AppAccess.configured(this)) configure();
+    }
+
+    private void configure() {
+        AppAccess.choose(this, () -> {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+            }
+        });
     }
 
     private LinearLayout card(LinearLayout parent, int margin, int color) {
@@ -145,6 +157,10 @@ public final class MainActivity extends Activity {
         if (YouTubeSearch.handle(this, phrase, status::setText)) return;
         String command = VoiceInput.command(phrase);
         if (command.equals("mở tin nhắn") || command.equals("mở sms") || command.equals("open sms") || command.equals("open messages")) {
+            if (!AppAccess.allows(this, "SMS")) {
+                status.setText(R.string.access_required);
+                return;
+            }
             Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
             try {
                 startActivity(sms);
@@ -162,6 +178,17 @@ public final class MainActivity extends Activity {
             default -> new String[0];
         };
         for (String name : packages) {
+            String app = switch (name) {
+                case "com.facebook.orca" -> "Messenger";
+                case "com.zing.zalo" -> "Zalo";
+                case "com.whatsapp" -> "WhatsApp";
+                case YouTubeSearch.PACKAGE -> "YouTube";
+                default -> "TikTok";
+            };
+            if (!AppAccess.allows(this, app)) {
+                status.setText(R.string.access_required);
+                return;
+            }
             Intent launch = getPackageManager().getLaunchIntentForPackage(name);
             if (launch != null) {
                 startActivity(launch);

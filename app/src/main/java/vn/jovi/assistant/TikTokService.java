@@ -35,13 +35,13 @@ public final class TikTokService extends AccessibilityService {
     }
 
     private boolean isTikTok(AccessibilityNodeInfo root) {
-        return root != null && root.getPackageName() != null
+        return AppAccess.allows(this, "TikTok") && root != null && root.getPackageName() != null
                 && Arrays.asList(PACKAGES).contains(root.getPackageName().toString());
     }
 
     private boolean isYouTube(AccessibilityNodeInfo root) {
         CharSequence name = root == null ? null : root.getPackageName();
-        return name != null && YouTubeSearch.PACKAGE.contentEquals(name);
+        return AppAccess.allows(this, "YouTube") && name != null && YouTubeSearch.PACKAGE.contentEquals(name);
     }
 
     private boolean isSupported(AccessibilityNodeInfo root) {

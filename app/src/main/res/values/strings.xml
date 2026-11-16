@@ -26,4 +26,8 @@
     <string name="player_missing">Video controls are unavailable.</string>
     <string name="swipe_failed">Could not swipe in TikTok.</string>
     <string name="language">Language · Ngôn ngữ</string>
+    <string name="configure_jovi">Set up Jovi</string>
+    <string name="choose_apps">Choose apps Jovi may access</string>
+    <string name="save_access">Save and continue</string>
+    <string name="access_required">Allow this app in Set up Jovi first.</string>
 </resources>

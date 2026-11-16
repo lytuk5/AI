@@ -1,5 +1,11 @@
 # Bản vá Jovi
 
+## 0.6
+
+- Màn hình thiết lập lần đầu cho phép chọn từng ứng dụng, sau đó mở hộp thoại cấp quyền micrô của Android.
+- Có thể thay đổi danh sách trong **Thiết lập Jovi**. Các lệnh mở ứng dụng và điều khiển YouTube, TikTok áp dụng lựa chọn này.
+- Bản này vẫn kích hoạt micrô bằng nút. Gọi “Jovi” khi máy khóa và thông báo nghe nền đang chờ triển khai.
+
 ## 0.5
 
 - Giao diện, thông báo và các lệnh hiện có của Jovi hỗ trợ tiếng Việt và tiếng Anh.
