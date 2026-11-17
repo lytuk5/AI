@@ -5,7 +5,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 final class CommandParser {
-    private static final Pattern SPACE = Pattern.compile("\\s+", Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern SPACE = Pattern.compile("\\s+");
     private static final Pattern WAKE = Pattern.compile(
             "^(?:jovi|joby|giô vi|giôvi)(?:[\\s,]+|$)",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
