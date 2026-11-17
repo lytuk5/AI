@@ -24,8 +24,20 @@ public final class TikTokService extends AccessibilityService {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Button control;
     private VoiceInput voice;
+    private static TikTokService active;
+
+    static boolean available() { return active != null; }
+
+    static boolean openWakeScreen() {
+        if (active == null) return false;
+        active.startActivity(new android.content.Intent(active, MainActivity.class)
+                .setAction("vn.jovi.assistant.WAKE")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP));
+        return true;
+    }
 
     @Override protected void onServiceConnected() {
+        active = this;
         voice = new VoiceInput(this);
         scheduleWindowCheck();
     }
@@ -179,6 +191,10 @@ public final class TikTokService extends AccessibilityService {
 
     @Override public void onDestroy() {
         onInterrupt();
+        if (active == this) {
+            active = null;
+            stopService(new android.content.Intent(this, WakeService.class));
+        }
         super.onDestroy();
     }
 }

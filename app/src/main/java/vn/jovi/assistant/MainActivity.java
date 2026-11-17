@@ -94,14 +94,70 @@ public final class MainActivity extends Activity {
         Button configure = action(getString(R.string.configure_jovi), 0xffd7ecff, 0xff123358);
         voiceCard.addView(configure, new LinearLayout.LayoutParams(listenSize));
         configure.setOnClickListener(view -> configure());
+        var roles = getSystemService(android.app.role.RoleManager.class);
+        if (roles.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)) {
+            Button assistant = action(getString(R.string.set_default_assistant), 0xffd7ecff, 0xff123358);
+            settings.addView(assistant, new LinearLayout.LayoutParams(setupSize));
+            assistant.setOnClickListener(view -> {
+                if (roles.isRoleHeld(android.app.role.RoleManager.ROLE_ASSISTANT)) {
+                    status.setText(R.string.default_assistant_active);
+                } else {
+                    startActivityForResult(roles.createRequestRoleIntent(android.app.role.RoleManager.ROLE_ASSISTANT), 4);
+                }
+            });
+        }
         setContentView(scroll);
+        handleWake(getIntent());
         if (state == null && !AppAccess.configured(this)) configure();
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        handleWake(intent);
+    }
+
+    private void handleWake(Intent intent) {
+        if (!"vn.jovi.assistant.WAKE".equals(intent.getAction()) || !WakeService.consumeWake()) return;
+        setShowWhenLocked(true);
+        setTurnScreenOn(true);
+        status.postDelayed(this::startListening, 200);
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        startWakeIfReady();
+    }
+
+    private void startWakeIfReady() {
+        if (WakeService.enabled() || !TikTokService.available()
+                || checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+                || (android.os.Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)) {
+            return;
+        }
+        try {
+            startForegroundService(new Intent(this, WakeService.class));
+            status.setText(R.string.wake_waiting);
+        } catch (RuntimeException error) {
+            status.setText(R.string.wake_failed);
+        }
+    }
+
+    private void finishWakeSetup() {
+        if (android.os.Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 5);
+            return;
+        }
+        startWakeIfReady();
     }
 
     private void configure() {
         AppAccess.choose(this, () -> {
             if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 2);
+            } else {
+                finishWakeSetup();
             }
         });
     }
@@ -152,6 +208,10 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(code, permissions, results);
+        if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
+            if (code == 2) finishWakeSetup();
+            if (code == 5) startWakeIfReady();
+        }
         if ((code == 1 || code == 2) && results.length > 0 && results[0] != PackageManager.PERMISSION_GRANTED) {
             status.setText(R.string.permission_hint);
         }
@@ -176,6 +236,10 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
         super.onActivityResult(code, result, data);
+        if (code == 4) {
+            status.setText(result == RESULT_OK ? R.string.default_assistant_active : R.string.default_assistant_declined);
+            return;
+        }
         if (code != 3 || result != RESULT_OK || data == null) return;
         var phrases = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
         if (phrases == null || phrases.isEmpty()) {
@@ -188,10 +252,25 @@ public final class MainActivity extends Activity {
     private void startListening() {
         if (voice == null) voice = new VoiceInput(this);
         status.setText(R.string.listening);
-        voice.listen(this::runCommand, status::setText);
+        VoiceInput session = voice;
+        WakeService.pauseForCommand();
+        status.postDelayed(() -> {
+            if (voice != session) return;
+            session.listen(phrase -> {
+                WakeService.resumeWake();
+                runCommand(phrase);
+            }, error -> {
+                WakeService.resumeWake();
+                status.setText(error);
+            });
+        }, 200);
     }
 
     private void runCommand(String phrase) {
+        if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) {
+            status.setText(R.string.wake_unlock);
+            return;
+        }
         if (YouTubeSearch.handle(this, phrase, false, status::setText)) return;
         String command = CommandParser.appCommand(phrase);
         if (command.equals("open messages")) {
@@ -242,6 +321,7 @@ public final class MainActivity extends Activity {
         if (voice != null) {
             voice.close();
             voice = null;
+            WakeService.resumeWake();
         }
         if (getString(R.string.listening).contentEquals(status.getText())) status.setText(R.string.ready);
         super.onStop();

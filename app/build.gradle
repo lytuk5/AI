@@ -10,7 +10,41 @@ android {
         applicationId 'vn.jovi.assistant'
         minSdk 29
         targetSdk 36
-        versionCode 10
-        versionName '1.0'
+        versionCode 12
+        versionName '1.2'
     }
 }
+
+dependencies {
+    implementation 'com.alphacephei:vosk-android:0.3.75@aar'
+    implementation 'net.java.dev.jna:jna:5.18.1@aar'
+}
+
+def wakeModelDir = layout.buildDirectory.dir('generated/wake-model/assets')
+def prepareWakeModel = tasks.register('prepareWakeModel') {
+    outputs.dir(wakeModelDir)
+    doLast {
+        def destination = wakeModelDir.get().file('wake-model.zip').asFile
+        def expected = '30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498'
+        def hash = { file ->
+            java.security.MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString()
+        }
+        if (destination.isFile() && hash(destination) == expected) return
+        destination.parentFile.mkdirs()
+        def temporary = new File(destination.parentFile, 'wake-model.tmp')
+        try {
+            def connection = URI.create('https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip').toURL().openConnection()
+            connection.connectTimeout = 20000
+            connection.readTimeout = 60000
+            connection.inputStream.withCloseable { input ->
+                temporary.withOutputStream { output -> input.transferTo(output) }
+            }
+            if (hash(temporary) != expected) throw new GradleException('Wake model SHA-256 mismatch')
+            java.nio.file.Files.move(temporary.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            temporary.delete()
+        }
+    }
+}
+android.sourceSets.main.assets.srcDir(wakeModelDir.get().asFile)
+tasks.named('preBuild').configure { dependsOn(prepareWakeModel) }

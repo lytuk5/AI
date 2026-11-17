@@ -35,4 +35,11 @@
     <string name="app_name">Jovi</string>
     <string name="voice_language">This speech language is unavailable. Check your voice settings.</string>
     <string name="voice_busy">The speech service is busy or unavailable. Try Android voice input.</string>
+    <string name="set_default_assistant">Set Jovi as default assistant</string>
+    <string name="default_assistant_active">Jovi is your default assistant.</string>
+    <string name="default_assistant_declined">Jovi was not selected as your default assistant.</string>
+    <string name="wake_title">Jovi wake phrase</string>
+    <string name="wake_waiting">Listening for “Jovi Jovi”</string>
+    <string name="wake_failed">Could not start wake listening.</string>
+    <string name="wake_unlock">Unlock your phone to run that command.</string>
 </resources>

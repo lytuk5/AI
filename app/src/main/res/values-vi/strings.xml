@@ -35,4 +35,11 @@
     <string name="app_name">Jovi</string>
     <string name="voice_language">Ngôn ngữ nhận dạng chưa có. Hãy kiểm tra cài đặt giọng nói.</string>
     <string name="voice_busy">Dịch vụ nhận dạng đang bận hoặc không khả dụng. Hãy thử nhập giọng nói Android.</string>
+    <string name="set_default_assistant">Đặt Jovi làm trợ lý mặc định</string>
+    <string name="default_assistant_active">Jovi đang là trợ lý mặc định.</string>
+    <string name="default_assistant_declined">Bạn chưa chọn Jovi làm trợ lý mặc định.</string>
+    <string name="wake_title">Từ khóa đánh thức Jovi</string>
+    <string name="wake_waiting">Đang chờ bạn gọi “Jovi Jovi”</string>
+    <string name="wake_failed">Không bật được chế độ nghe nền.</string>
+    <string name="wake_unlock">Mở khóa điện thoại để thực hiện lệnh.</string>
 </resources>

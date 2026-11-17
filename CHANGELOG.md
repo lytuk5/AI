@@ -1,5 +1,18 @@
 # Bản vá Jovi
 
+## 1.2 thử nghiệm
+
+- Thêm dịch vụ micrô chạy nền nhận câu “Jovi Jovi” trên thiết bị bằng Vosk.
+- Tự bật nghe nền sau khi cấp quyền. Jovi tự kết thúc phiên nghe lệnh và quay về chờ câu gọi.
+- Khi phát hiện câu gọi, Jovi yêu cầu Android hiện giao diện. Các lệnh mở ứng dụng yêu cầu mở khóa điện thoại.
+- Mô hình tiếng Anh Vosk Small 0.15 được đóng gói trong APK. Nhận dạng trên iQOO và độ chính xác của câu gọi cần kiểm thử.
+
+## 1.1
+
+- Thêm nút chọn Jovi làm trợ lý mặc định qua hộp thoại Android.
+- Jovi mở khi được gọi bằng thao tác trợ lý của hệ thống trên các máy hỗ trợ.
+- Từ khóa đánh thức “Jovi Jovi” chưa được triển khai.
+
 ## 1.0
 
 - Nút Jovi cập nhật theo sự kiện cửa sổ và bỏ kiểm tra lặp mỗi 300 ms.
