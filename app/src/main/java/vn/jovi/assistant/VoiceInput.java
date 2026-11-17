@@ -80,6 +80,22 @@ final class VoiceInput {
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, context.getResources().getConfiguration().getLocales().get(0).getLanguage().equals("vi") ? "vi-VN" : "en-US");
         try {
             session.startListening(request);
+            if (android.os.Build.VERSION.SDK_INT >= 33
+                    && "vi-VN".equals(request.getStringExtra(RecognizerIntent.EXTRA_LANGUAGE))) {
+                session.checkRecognitionSupport(request, context.getMainExecutor(),
+                        new android.speech.RecognitionSupportCallback() {
+                            @Override public void onSupportResult(android.speech.RecognitionSupport support) {
+                                if (recognizer == session
+                                        && support.getSupportedOnDeviceLanguages().contains("vi-VN")
+                                        && !support.getInstalledOnDeviceLanguages().contains("vi-VN")
+                                        && !support.getPendingOnDeviceLanguages().contains("vi-VN")) {
+                                    session.triggerModelDownload(request);
+                                }
+                            }
+
+                            @Override public void onError(int code) {}
+                        });
+            }
         } catch (RuntimeException failure) {
             close();
             error.accept(context.getString(R.string.recognizer_missing));
