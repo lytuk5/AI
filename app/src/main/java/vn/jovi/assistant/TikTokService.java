@@ -24,21 +24,30 @@ public final class TikTokService extends AccessibilityService {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private Button control;
     private VoiceInput voice;
+    private WakePanel wakePanel;
     private static TikTokService active;
 
-    static boolean available() { return active != null; }
+    static boolean configured(android.content.Context context) {
+        String enabled = android.provider.Settings.Secure.getString(context.getContentResolver(),
+                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        if (enabled == null) return false;
+        var ownService = new android.content.ComponentName(context, TikTokService.class);
+        for (String service : enabled.split(":")) {
+            if (ownService.equals(android.content.ComponentName.unflattenFromString(service))) return true;
+        }
+        return false;
+    }
 
-    static boolean openWakeScreen() {
+    static boolean showWakePanel() {
         if (active == null) return false;
-        active.startActivity(new android.content.Intent(active, MainActivity.class)
-                .setAction("vn.jovi.assistant.WAKE")
-                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP));
-        return true;
+        active.voice.close();
+        return active.wakePanel.show();
     }
 
     @Override protected void onServiceConnected() {
         active = this;
         voice = new VoiceInput(this);
+        wakePanel = new WakePanel(this);
         scheduleWindowCheck();
     }
 
@@ -61,6 +70,7 @@ public final class TikTokService extends AccessibilityService {
     }
 
     private final Runnable windowCheck = () -> {
+        if (wakePanel != null && !wakePanel.canShow()) wakePanel.close();
         if (isSupported(getRootInActiveWindow()) && getSystemService(PowerManager.class).isInteractive()
                 && !getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) {
             showControl();
@@ -99,8 +109,7 @@ public final class TikTokService extends AccessibilityService {
             message(getString(R.string.permission_hint));
             return;
         }
-        message(getString(R.string.listening));
-        voice.listen(phrase -> {
+        voice.listen(() -> message(getString(R.string.listening)), phrase -> {
             AccessibilityNodeInfo root = getRootInActiveWindow();
             if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) return;
             if (isYouTube(root)) {
@@ -184,6 +193,7 @@ public final class TikTokService extends AccessibilityService {
     }
 
     @Override public void onInterrupt() {
+        if (wakePanel != null) wakePanel.close();
         handler.removeCallbacksAndMessages(null);
         if (voice != null) voice.close();
         removeControl();

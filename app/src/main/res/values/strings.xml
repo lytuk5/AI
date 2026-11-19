@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="ready">Tap below to speak a command.</string>
+    <string name="voice_preparing">Preparing microphone…</string>
     <string name="listening">Listening…</string>
     <string name="subtitle">Voice assistant</string>
     <string name="listen">Talk to Jovi</string>
@@ -13,7 +14,7 @@
     <string name="accessibility_service">Jovi for TikTok and YouTube</string>
     <string name="no_sms">No SMS app is available.</string>
     <string name="opened">App opened.</string>
-    <string name="unsupported">Jovi does not support this command yet.</string>
+    <string name="unsupported">Heard “%1$s”. Try a supported command.</string>
     <string name="app_missing">App not found.</string>
     <string name="recognizer_missing">Speech recognition is unavailable on this device.</string>
     <string name="no_command">No command recognized. Please try again.</string>
@@ -31,6 +32,7 @@
     <string name="save_access">Save and continue</string>
     <string name="access_required">Allow this app in Set up Jovi first.</string>
     <string name="voice_timeout">Speech recognition did not respond. Check your voice service and try again.</string><string name="voice_network">Speech recognition could not connect. Check your network and try again.</string>
+    <string name="offline_voice">Use offline voice input</string>
     <string name="system_voice">Use Android voice input</string>
     <string name="app_name">Jovi</string>
     <string name="voice_language">This speech language is unavailable. Check your voice settings.</string>
@@ -38,6 +40,10 @@
     <string name="set_default_assistant">Set Jovi as default assistant</string>
     <string name="default_assistant_active">Jovi is your default assistant.</string>
     <string name="default_assistant_declined">Jovi was not selected as your default assistant.</string>
+    <string name="wake_voice_prompt">Jovi is listening. Say a command.</string>
+    <string name="wake_close">Close voice panel</string>
+    <string name="wake_setup">Set up hands-free calling</string>
+    <string name="wake_accessibility">Enable the Jovi accessibility service to open Jovi by voice.</string>
     <string name="wake_title">Jovi wake phrase</string>
     <string name="wake_waiting">Listening for “Jovi Jovi”</string>
     <string name="wake_failed">Could not start wake listening.</string>

@@ -21,6 +21,7 @@ public final class MainActivity extends Activity {
 
     private TextView status;
     private VoiceInput voice;
+    private boolean systemVoicePending;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -59,15 +60,17 @@ public final class MainActivity extends Activity {
         LinearLayout.LayoutParams listenSize = new LinearLayout.LayoutParams(-1, -2);
         listenSize.topMargin = dp(16);
         voiceCard.addView(listen, listenSize);
-        Button systemVoice = action(getString(R.string.system_voice), 0xffd7ecff, 0xff123358);
-        voiceCard.addView(systemVoice, new LinearLayout.LayoutParams(-1, -2));
-        systemVoice.setOnClickListener(view -> startSystemVoice());
+        boolean vietnamese = usesVietnamese();
+        Button alternateVoice = action(getString(vietnamese ? R.string.offline_voice : R.string.system_voice),
+                0xffd7ecff, 0xff123358);
+        voiceCard.addView(alternateVoice, new LinearLayout.LayoutParams(-1, -2));
         listen.setOnClickListener(view -> {
-            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                startListening();
-            } else {
-                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
-            }
+            if (vietnamese) startSystemVoice();
+            else startListeningWithPermission();
+        });
+        alternateVoice.setOnClickListener(view -> {
+            if (vietnamese) startListeningWithPermission();
+            else startSystemVoice();
         });
 
         LinearLayout examples = card(layout, 16, 0xffffffff);
@@ -94,6 +97,9 @@ public final class MainActivity extends Activity {
         Button configure = action(getString(R.string.configure_jovi), 0xffd7ecff, 0xff123358);
         voiceCard.addView(configure, new LinearLayout.LayoutParams(listenSize));
         configure.setOnClickListener(view -> configure());
+        Button wake = action(getString(R.string.wake_setup), 0xffd7ecff, 0xff123358);
+        voiceCard.addView(wake, new LinearLayout.LayoutParams(listenSize));
+        wake.setOnClickListener(view -> configureWake());
         var roles = getSystemService(android.app.role.RoleManager.class);
         if (roles.isRoleAvailable(android.app.role.RoleManager.ROLE_ASSISTANT)) {
             Button assistant = action(getString(R.string.set_default_assistant), 0xffd7ecff, 0xff123358);
@@ -107,20 +113,7 @@ public final class MainActivity extends Activity {
             });
         }
         setContentView(scroll);
-        handleWake(getIntent());
         if (state == null && !AppAccess.configured(this)) configure();
-    }
-
-    @Override protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleWake(intent);
-    }
-
-    private void handleWake(Intent intent) {
-        if (!"vn.jovi.assistant.WAKE".equals(intent.getAction()) || !WakeService.consumeWake()) return;
-        setShowWhenLocked(true);
-        setTurnScreenOn(true);
-        status.postDelayed(this::startListening, 200);
     }
 
     @Override protected void onResume() {
@@ -129,7 +122,7 @@ public final class MainActivity extends Activity {
     }
 
     private void startWakeIfReady() {
-        if (WakeService.enabled() || !TikTokService.available()
+        if (WakeService.enabled() || !TikTokService.configured(this)
                 || checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
                 || (android.os.Build.VERSION.SDK_INT >= 33
                     && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)) {
@@ -140,6 +133,27 @@ public final class MainActivity extends Activity {
             status.setText(R.string.wake_waiting);
         } catch (RuntimeException error) {
             status.setText(R.string.wake_failed);
+        }
+    }
+
+    private void configureWake() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 6);
+        } else if (android.os.Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7);
+        } else {
+            showWakeSetup();
+        }
+    }
+
+    private void showWakeSetup() {
+        if (TikTokService.configured(this)) {
+            startWakeIfReady();
+            if (WakeService.enabled()) status.setText(R.string.wake_waiting);
+        } else {
+            status.setText(R.string.wake_accessibility);
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         }
     }
 
@@ -211,8 +225,11 @@ public final class MainActivity extends Activity {
         if (results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
             if (code == 2) finishWakeSetup();
             if (code == 5) startWakeIfReady();
+            if (code == 6) configureWake();
+            if (code == 7) showWakeSetup();
         }
-        if ((code == 1 || code == 2) && results.length > 0 && results[0] != PackageManager.PERMISSION_GRANTED) {
+        if ((code == 1 || code == 2 || code == 6)
+                && results.length > 0 && results[0] != PackageManager.PERMISSION_GRANTED) {
             status.setText(R.string.permission_hint);
         }
         if (code == 1 && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) {
@@ -220,18 +237,49 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private boolean usesVietnamese() {
+        return "vi".equals(getResources().getConfiguration().getLocales().get(0).getLanguage());
+    }
+
+    private void startListeningWithPermission() {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startListening();
+        } else {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1);
+        }
+    }
+
     private void startSystemVoice() {
+        if (systemVoicePending) return;
+        if (voice != null) voice.close();
+        systemVoicePending = true;
+        WakeService.pauseForCommand();
+        WakeService.whenMicrophoneReleased(status.getHandler(), () -> systemVoicePending,
+                this::launchSystemVoice, () -> {
+                    finishSystemVoice();
+                    status.setText(R.string.voice_busy);
+                });
+    }
+
+    private void launchSystemVoice() {
         Intent request = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                         android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE,
-                        getResources().getConfiguration().getLocales().get(0).getLanguage().equals("vi")
-                                ? "vi-VN" : "en-US");
+                        usesVietnamese() ? "vi-VN" : "en-US")
+                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, getString(R.string.wake_voice_prompt));
         try {
             startActivityForResult(request, 3);
         } catch (android.content.ActivityNotFoundException | SecurityException error) {
+            finishSystemVoice();
             status.setText(R.string.recognizer_missing);
         }
+    }
+
+    private void finishSystemVoice() {
+        if (!systemVoicePending) return;
+        systemVoicePending = false;
+        WakeService.resumeWake();
     }
 
     @Override protected void onActivityResult(int code, int result, Intent data) {
@@ -240,7 +288,9 @@ public final class MainActivity extends Activity {
             status.setText(result == RESULT_OK ? R.string.default_assistant_active : R.string.default_assistant_declined);
             return;
         }
-        if (code != 3 || result != RESULT_OK || data == null) return;
+        if (code != 3) return;
+        finishSystemVoice();
+        if (result != RESULT_OK || data == null) return;
         var phrases = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
         if (phrases == null || phrases.isEmpty()) {
             status.setText(R.string.no_command);
@@ -250,80 +300,30 @@ public final class MainActivity extends Activity {
     }
 
     private void startListening() {
+        if (systemVoicePending) return;
         if (voice == null) voice = new VoiceInput(this);
-        status.setText(R.string.listening);
-        VoiceInput session = voice;
-        WakeService.pauseForCommand();
-        status.postDelayed(() -> {
-            if (voice != session) return;
-            session.listen(phrase -> {
-                WakeService.resumeWake();
-                runCommand(phrase);
-            }, error -> {
-                WakeService.resumeWake();
-                status.setText(error);
-            });
-        }, 200);
+        status.setText(R.string.voice_preparing);
+        voice.listen(() -> status.setText(R.string.listening), this::runCommand, status::setText);
     }
 
     private void runCommand(String phrase) {
-        if (getSystemService(android.app.KeyguardManager.class).isDeviceLocked()) {
-            status.setText(R.string.wake_unlock);
-            return;
-        }
-        if (YouTubeSearch.handle(this, phrase, false, status::setText)) return;
-        String command = CommandParser.appCommand(phrase);
-        if (command.equals("open messages")) {
-            if (!AppAccess.allows(this, "SMS")) {
-                status.setText(R.string.access_required);
-                return;
-            }
-            Intent sms = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:"));
-            try {
-                startActivity(sms);
-                status.setText(R.string.opened);
-            } catch (android.content.ActivityNotFoundException error) {
-                status.setText(getString(R.string.no_sms));
-            }
-            return;
-        }
-        String[] packages = switch (command) {
-            case "open tiktok" -> TikTokService.PACKAGES;
-            case "open youtube" -> new String[]{YouTubeSearch.PACKAGE};
-            case "open messenger" -> new String[]{"com.facebook.orca"};
-            case "mở zalo" -> new String[]{"com.zing.zalo"};
-            case "open whatsapp" -> new String[]{"com.whatsapp"};
-            default -> new String[0];
-        };
-        for (String name : packages) {
-            String app = switch (name) {
-                case "com.facebook.orca" -> "Messenger";
-                case "com.zing.zalo" -> "Zalo";
-                case "com.whatsapp" -> "WhatsApp";
-                case YouTubeSearch.PACKAGE -> "YouTube";
-                default -> "TikTok";
-            };
-            if (!AppAccess.allows(this, app)) {
-                status.setText(R.string.access_required);
-                return;
-            }
-            Intent launch = getPackageManager().getLaunchIntentForPackage(name);
-            if (launch != null) {
-                startActivity(launch);
-                status.setText(getString(R.string.opened));
-                return;
-            }
-        }
-        status.setText(packages.length == 0 ? getString(R.string.unsupported) : getString(R.string.app_missing));
+        AppCommands.run(this, phrase, status::setText);
     }
 
     @Override protected void onStop() {
         if (voice != null) {
             voice.close();
             voice = null;
-            WakeService.resumeWake();
         }
-        if (getString(R.string.listening).contentEquals(status.getText())) status.setText(R.string.ready);
+        if (getString(R.string.listening).contentEquals(status.getText())
+                || getString(R.string.voice_preparing).contentEquals(status.getText())) {
+            status.setText(R.string.ready);
+        }
         super.onStop();
+    }
+
+    @Override protected void onDestroy() {
+        finishSystemVoice();
+        super.onDestroy();
     }
 }

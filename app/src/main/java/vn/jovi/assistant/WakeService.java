@@ -13,36 +13,44 @@ import org.json.JSONObject;
 import org.vosk.Model;
 import org.vosk.Recognizer;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.util.zip.ZipInputStream;
-
 public final class WakeService extends Service {
     private static final String CHANNEL = "jovi_wake";
     private static final int ID = 18;
     private static final int SAMPLE_RATE = 16000;
+    private static final String WAKE_GRAMMAR = """
+            ["jovi jovi", "joe vee joe vee", "joe v joe v", "joey joey", "joby joby", "[unk]"]
+            """;
     private static WakeService current;
+    private static volatile int commandSessions;
+    private volatile boolean capturing;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private volatile boolean running;
     private volatile long pausedUntil;
-    private volatile long wakeAt;
     private PowerManager.WakeLock cpu;
 
     static boolean enabled() { return current != null; }
 
     static void pauseForCommand() {
-        if (current != null) current.pausedUntil = SystemClock.elapsedRealtime() + 16000;
+        commandSessions++;
     }
 
     static void resumeWake() {
-        if (current != null) current.pausedUntil = 0;
+        if (--commandSessions == 0 && current != null) current.pausedUntil = 0;
+        assert commandSessions >= 0;
     }
 
-    static boolean consumeWake() {
-        if (current == null || current.wakeAt == 0
-                || SystemClock.elapsedRealtime() - current.wakeAt > 4000) return false;
-        current.wakeAt = 0;
-        return true;
+    static void whenMicrophoneReleased(Handler handler, java.util.function.BooleanSupplier active,
+                                       Runnable ready, Runnable busy) {
+        long deadline = SystemClock.elapsedRealtime() + 2000;
+        Runnable check = new Runnable() {
+            @Override public void run() {
+                if (!active.getAsBoolean()) return;
+                if (current == null || !current.capturing) ready.run();
+                else if (SystemClock.elapsedRealtime() >= deadline) busy.run();
+                else handler.postDelayed(this, 25);
+            }
+        };
+        check.run();
     }
 
     @Override public IBinder onBind(Intent intent) { return null; }
@@ -73,37 +81,17 @@ public final class WakeService extends Service {
         return START_NOT_STICKY;
     }
 
-    private File modelDirectory() throws Exception {
-        File folder = new File(getNoBackupFilesDir(), "jovi-wake-v1").getCanonicalFile();
-        File ready = new File(folder, "ready");
-        File model = new File(folder, "vosk-model-small-en-us-0.15");
-        if (ready.isFile()) return model;
-        Files.createDirectories(folder.toPath());
-        try (var zip = new ZipInputStream(getAssets().open("wake-model.zip"))) {
-            for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
-                if (!running) throw new InterruptedException();
-                File target = new File(folder, entry.getName()).getCanonicalFile();
-                if (!target.toPath().startsWith(folder.toPath())) throw new SecurityException("Invalid model path");
-                if (entry.isDirectory()) {
-                    Files.createDirectories(target.toPath());
-                } else {
-                    Files.createDirectories(target.toPath().getParent());
-                    Files.copy(zip, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        }
-        Files.createFile(ready.toPath());
-        return model;
-    }
-
     private void listen() {
-        try (Model model = new Model(modelDirectory().getAbsolutePath());
-             Recognizer recognizer = new Recognizer(model, SAMPLE_RATE)) {
+        try (Model model = new Model(SpeechModel.directory(this, "jovi-wake-v1", "wake-model.zip",
+                "vosk-model-small-en-us-0.15", () -> running).getAbsolutePath());
+             Recognizer recognizer = new Recognizer(model, SAMPLE_RATE, WAKE_GRAMMAR)) {
             int size = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                     AudioFormat.ENCODING_PCM_16BIT);
+            if (size <= 0) throw new IllegalStateException("Unsupported wake microphone format: " + size);
             short[] audio = new short[1600];
+            int retryDelay = 250;
             while (running) {
-                if (pausedUntil > SystemClock.elapsedRealtime()) {
+                if (commandSessions > 0 || pausedUntil > SystemClock.elapsedRealtime()) {
                     Thread.sleep(100);
                     continue;
                 }
@@ -111,15 +99,38 @@ public final class WakeService extends Service {
                         != android.content.pm.PackageManager.PERMISSION_GRANTED) {
                     throw new SecurityException("Microphone permission revoked");
                 }
-                AudioRecord mic = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, SAMPLE_RATE,
-                        AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(size, 6400));
                 boolean detected = false;
+                boolean silentStream = false;
+                AudioRecord mic = null;
+                capturing = true;
                 try {
+                    // Publish capture before checking whether a command has claimed the mic.
+                    if (commandSessions > 0) continue;
+                    mic = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE,
+                            AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(size, 6400));
                     recognizer.reset();
                     mic.startRecording();
-                    while (running && pausedUntil <= SystemClock.elapsedRealtime()) {
+                    if (mic.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) {
+                        throw new IllegalStateException("Wake microphone did not start recording");
+                    }
+                    int zeroSamples = 0;
+                    while (running && commandSessions == 0 && pausedUntil <= SystemClock.elapsedRealtime()) {
                         int count = mic.read(audio, 0, audio.length);
                         if (count < 0) throw new IllegalStateException("AudioRecord read: " + count);
+                        if (count == 0) continue;
+                        zeroSamples += count;
+                        for (int i = 0; i < count; i++) {
+                            if (audio[i] != 0) {
+                                zeroSamples = 0;
+                                retryDelay = 250;
+                                break;
+                            }
+                        }
+                        // A stream of exact zeros can persist after the emulator loses its host input.
+                        if (zeroSamples >= 4 * SAMPLE_RATE) {
+                            silentStream = true;
+                            break;
+                        }
                         boolean complete = recognizer.acceptWaveForm(audio, count);
                         var result = new JSONObject(complete ? recognizer.getResult() : recognizer.getPartialResult());
                         if (isWakePhrase(result.optString(complete ? "text" : "partial"))) {
@@ -129,17 +140,22 @@ public final class WakeService extends Service {
                         }
                     }
                 } finally {
-                    mic.release();
+                    if (mic != null) mic.release();
+                    capturing = false;
+                }
+                if (running && silentStream) {
+                    Thread.sleep(retryDelay);
+                    retryDelay = Math.min(retryDelay * 2, 4000);
                 }
                 if (running && detected) {
                     handler.post(() -> {
                         if (!running) return;
-                        wakeAt = SystemClock.elapsedRealtime();
+                        Log.i("Jovi", "Wake phrase detected");
                         try {
-                            if (!TikTokService.openWakeScreen()) resumeWake();
+                            if (!TikTokService.showWakePanel()) pausedUntil = 0;
                         } catch (RuntimeException error) {
                             Log.w("Jovi", "Could not show wake screen", error);
-                            resumeWake();
+                            pausedUntil = 0;
                         }
                     });
                     while (running && pausedUntil > SystemClock.elapsedRealtime()) Thread.sleep(100);

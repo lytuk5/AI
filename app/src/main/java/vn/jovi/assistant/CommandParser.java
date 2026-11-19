@@ -10,7 +10,8 @@ final class CommandParser {
             "^(?:jovi|joby|giô vi|giôvi)(?:[\\s,]+|$)",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
     private static final Pattern END = Pattern.compile("[.!?]+$");
-    private static final Pattern OPEN = Pattern.compile("^(?:mở(?: ứng dụng)?|vào(?: ứng dụng)?|open(?: the app)?) (.+)$");
+    private static final Pattern MARKS = Pattern.compile("\\p{M}+");
+    private static final Pattern OPEN = Pattern.compile("^(?:mo(?: ung dung)?|vao(?: ung dung)?|open(?: the app)?) (.+)$");
 
     static String stripWakeWord(String phrase) {
         String normalized = SPACE.matcher(Normalizer.normalize(phrase, Normalizer.Form.NFC).trim()).replaceAll(" ");
@@ -21,17 +22,27 @@ final class CommandParser {
         return stripWakeWord(phrase).toLowerCase(Locale.ROOT);
     }
 
+    private static String foldAccents(String command) {
+        return MARKS.matcher(Normalizer.normalize(command, Normalizer.Form.NFD))
+                .replaceAll("").replace('đ', 'd');
+    }
+
+    static boolean soundsLikeOpenCommand(String command) {
+        return OPEN.matcher(foldAccents(command)).matches();
+    }
+
     static String appCommand(String phrase) {
         String command = command(phrase);
-        var open = OPEN.matcher(command);
+        var open = OPEN.matcher(foldAccents(command));
         if (!open.matches()) return command;
-        return "open " + switch (open.group(1)) {
-            case "tik tok" -> "tiktok";
-            case "you tube" -> "youtube";
-            case "mess" -> "messenger";
-            case "whats app" -> "whatsapp";
-            case "tin nhắn", "sms" -> "messages";
-            default -> open.group(1);
+        return switch (open.group(1).replace(" ", "")) {
+            case "tiktok", "tichtoc" -> "open tiktok";
+            case "youtube", "iutup", "dutup", "youtup", "iutip", "dutip" -> "open youtube";
+            case "zalo", "gialo" -> "open zalo";
+            case "mess", "messenger" -> "open messenger";
+            case "whatsapp", "oatap" -> "open whatsapp";
+            case "tinnhan", "sms", "messages" -> "open messages";
+            default -> command;
         };
     }
 }
