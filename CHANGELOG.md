@@ -1,5 +1,14 @@
 # Bản vá Jovi
 
+## Cập nhật sau bản 1.2 thử nghiệm
+
+- Gọi **“Jovi Jovi”** khi màn hình đang mở và máy đã mở khóa để hiện khung chat ở góc trên bên phải. Khung báo **Đang nghe…**, hiện lời nói thành chữ và tự ẩn sau khi trả kết quả. Có thể bấm **×** để đóng.
+- Thêm nút **Thiết lập gọi Jovi bằng giọng nói** để cấp quyền micrô, quyền thông báo và bật dịch vụ Trợ năng của Jovi.
+- Sửa lỗi dịch vụ nghe nền giữ micrô khi bắt đầu nhận lệnh. Jovi đợi micrô được nhả và thử kết nối lại nếu luồng nghe nền mất tín hiệu.
+- Trong giao diện tiếng Việt, **Nói với Jovi** dùng nhập giọng nói của Android. Nút **Nhận dạng ngoại tuyến** và khung chat nổi dùng mô hình Vosk tiếng Việt đi kèm APK.
+- Chấp nhận một số cách phát âm tên ứng dụng, ví dụ “iu túp” và “du túp” cho YouTube. Nếu câu nhận được chưa khớp lệnh, Jovi hiện lại câu đó.
+- Đã xác minh trên Pixel ảo rằng câu gọi có thể mở khung nổi và khung hiển thị chữ nhận dạng. Độ chính xác của lệnh tiếng Việt và micrô trên điện thoại thật vẫn cần kiểm thử thêm.
+
 ## 1.2 thử nghiệm
 
 - Thêm dịch vụ micrô chạy nền nhận câu “Jovi Jovi” trên thiết bị bằng Vosk.

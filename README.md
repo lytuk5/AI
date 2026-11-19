@@ -2,6 +2,14 @@
 
 Trợ lý giọng nói tiếng Việt cho Android. Bản thử nghiệm hiện tại hỗ trợ lệnh mở TikTok, YouTube, Messenger, Zalo, WhatsApp và ứng dụng SMS.
 
+## Gọi Jovi khi đang dùng điện thoại
+
+1. Trong Jovi, chọn **Thiết lập gọi Jovi bằng giọng nói**. Cấp quyền micrô và thông báo nếu được hỏi rồi bật dịch vụ **Jovi cho TikTok và YouTube** trong Trợ năng.
+2. Về màn hình chính hoặc mở ứng dụng khác khi điện thoại đang mở khóa. Nói **“Jovi Jovi”**.
+3. Khi khung chat ở góc trên bên phải hiện **Đang nghe…**, nói lệnh như **“Mở YouTube”**. Jovi sẽ hiện câu nhận được trong khung.
+
+Xem [nhật ký thay đổi](CHANGELOG.md) để biết các bản sửa và phần đã kiểm thử.
+
 ## Thử TikTok
 
 1. Mở Jovi, chạm **Nói với Jovi** và cấp quyền micrô.
@@ -21,7 +29,7 @@ Trợ lý giọng nói tiếng Việt cho Android. Bản thử nghiệm hiện t
 - Tích hợp Messenger, Zalo, WhatsApp và SMS để nhận diện người gửi, tìm người theo tên, ghi nguyên văn, đọc lại rồi gửi sau xác nhận.
 - Dùng tính năng tự điền của Android cho ứng dụng được phép. Ứng dụng ngân hàng nằm ngoài phạm vi tích hợp.
 
-Các mục trên đang chờ triển khai hoặc xác minh. Bản thử nghiệm kích hoạt giọng nói bằng nút bấm.
+Các mục trên đang chờ triển khai hoặc xác minh.
 
 ## Build
 
