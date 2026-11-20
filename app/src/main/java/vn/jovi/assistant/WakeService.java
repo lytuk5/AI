@@ -26,7 +26,6 @@ public final class WakeService extends Service {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private volatile boolean running;
     private volatile long pausedUntil;
-    private PowerManager.WakeLock cpu;
 
     static boolean enabled() { return current != null; }
 
@@ -73,8 +72,6 @@ public final class WakeService extends Service {
         } else {
             startForeground(ID, notification);
         }
-        cpu = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Jovi:WakeListener");
-        cpu.acquire();
         running = true;
         current = this;
         new Thread(this::listen, "Jovi wake word").start();
@@ -88,9 +85,15 @@ public final class WakeService extends Service {
             int size = AudioRecord.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
                     AudioFormat.ENCODING_PCM_16BIT);
             if (size <= 0) throw new IllegalStateException("Unsupported wake microphone format: " + size);
+            PowerManager power = getSystemService(PowerManager.class);
+            KeyguardManager keyguard = getSystemService(KeyguardManager.class);
             short[] audio = new short[1600];
             int retryDelay = 250;
             while (running) {
+                if (!power.isInteractive() || keyguard.isKeyguardLocked()) {
+                    Thread.sleep(500);
+                    continue;
+                }
                 if (commandSessions > 0 || pausedUntil > SystemClock.elapsedRealtime()) {
                     Thread.sleep(100);
                     continue;
@@ -114,7 +117,8 @@ public final class WakeService extends Service {
                         throw new IllegalStateException("Wake microphone did not start recording");
                     }
                     int zeroSamples = 0;
-                    while (running && commandSessions == 0 && pausedUntil <= SystemClock.elapsedRealtime()) {
+                    while (running && commandSessions == 0 && pausedUntil <= SystemClock.elapsedRealtime()
+                            && power.isInteractive() && !keyguard.isKeyguardLocked()) {
                         int count = mic.read(audio, 0, audio.length);
                         if (count < 0) throw new IllegalStateException("AudioRecord read: " + count);
                         if (count == 0) continue;
@@ -182,7 +186,6 @@ public final class WakeService extends Service {
 
     @Override public void onDestroy() {
         running = false;
-        if (cpu != null && cpu.isHeld()) cpu.release();
         if (current == this) current = null;
         handler.removeCallbacksAndMessages(null);
         super.onDestroy();

@@ -3,7 +3,10 @@ package vn.jovi.assistant;
 import android.Manifest;
 import android.app.KeyguardManager;
 import android.app.LocaleManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
@@ -29,6 +32,12 @@ final class WakePanel {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable dismiss = this::close;
     private LinearLayout panel;
+    private boolean screenReceiverRegistered;
+    private final BroadcastReceiver screenOff = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (Intent.ACTION_SCREEN_OFF.equals(intent.getAction())) close();
+        }
+    };
 
     WakePanel(Context context) {
         this.context = context;
@@ -102,8 +111,15 @@ final class WakePanel {
         }
 
         panel = card;
+        var filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        if (Build.VERSION.SDK_INT >= 33) {
+            context.registerReceiver(screenOff, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            context.registerReceiver(screenOff, filter);
+        }
+        screenReceiverRegistered = true;
         voice = new VoiceInput(display, true);
-        voice.listen(() -> status.setText(display.getString(R.string.listening)), text -> showTranscript(transcript, text),
+        voice.listenInPanel(() -> status.setText(display.getString(R.string.listening)), text -> showTranscript(transcript, text),
                 text -> {
                     if (!canShow()) {
                         close();
@@ -121,6 +137,10 @@ final class WakePanel {
 
     void close() {
         handler.removeCallbacks(dismiss);
+        if (screenReceiverRegistered) {
+            context.unregisterReceiver(screenOff);
+            screenReceiverRegistered = false;
+        }
         if (voice != null) {
             voice.close();
             voice = null;

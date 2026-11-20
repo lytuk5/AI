@@ -31,27 +31,41 @@ final class VoiceInput {
     }
 
     void listen(Runnable ready, Consumer<String> result, Consumer<String> error) {
-        listen(ready, null, result, error);
+        listen(false, ready, null, result, error);
     }
 
-    void listen(Runnable ready, Consumer<String> partial, Consumer<String> result, Consumer<String> error) {
+    void listenInPanel(Runnable ready, Consumer<String> partial, Consumer<String> result, Consumer<String> error) {
+        listen(true, ready, partial, result, error);
+    }
+
+    private void listen(boolean preferAndroid, Runnable ready, Consumer<String> partial,
+                        Consumer<String> result, Consumer<String> error) {
         close();
-        if (context.getResources().getConfiguration().getLocales().get(0).getLanguage().equals("vi")) {
-            vietnamese = new VietnameseVoiceInput(context, handler, appCommands, ready, partial, result, error);
-            vietnamese.start();
+        boolean useVietnamese = "vi".equals(context.getResources().getConfiguration().getLocales().get(0).getLanguage());
+        boolean retryOffline = useVietnamese && preferAndroid;
+        if (useVietnamese && !preferAndroid) {
+            startOffline(ready, partial, result, error);
             return;
         }
+        Consumer<String> unavailable = retryOffline
+                ? ignored -> startOffline(ready, partial, result, error) : error;
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            error.accept(context.getString(R.string.recognizer_missing));
+            unavailable.accept(context.getString(R.string.recognizer_missing));
             return;
         }
-        recognizer = SpeechRecognizer.createSpeechRecognizer(context);
+        try {
+            recognizer = SpeechRecognizer.createSpeechRecognizer(context);
+        } catch (RuntimeException failure) {
+            android.util.Log.w("Jovi", "Could not create speech recognition", failure);
+            unavailable.accept(context.getString(R.string.recognizer_missing));
+            return;
+        }
         SpeechRecognizer session = recognizer;
         WakeService.pauseForCommand();
         timeout = () -> {
             if (recognizer != session) return;
             close();
-            error.accept(context.getString(R.string.voice_timeout));
+            unavailable.accept(context.getString(R.string.voice_timeout));
         };
         handler.postDelayed(timeout, 12000);
         recognizer.setRecognitionListener(new RecognitionListener() {
@@ -87,12 +101,17 @@ final class VoiceInput {
                          SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> R.string.voice_busy;
                     default -> R.string.no_command;
                 };
-                error.accept(context.getString(message));
+                if (retryOffline && message != R.string.permission_hint && message != R.string.no_command) {
+                    unavailable.accept(context.getString(message));
+                } else {
+                    error.accept(context.getString(message));
+                }
             }
             @Override public void onResults(Bundle extras) {
                 if (recognizer != session) return;
                 close();
-                ArrayList<String> phrases = extras.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                ArrayList<String> phrases = extras == null ? null
+                        : extras.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (phrases == null || phrases.isEmpty()) {
                     error.accept(context.getString(R.string.no_command));
                 } else {
@@ -102,13 +121,19 @@ final class VoiceInput {
         });
         Intent request = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+                .putExtra(RecognizerIntent.EXTRA_LANGUAGE, useVietnamese ? "vi-VN" : "en-US")
                 .putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, partial != null);
         WakeService.whenMicrophoneReleased(handler, () -> recognizer == session,
-                () -> startRecognition(session, request, error), () -> {
+                () -> startRecognition(session, request, unavailable), () -> {
                     close();
                     error.accept(context.getString(R.string.voice_busy));
                 });
+    }
+
+    private void startOffline(Runnable ready, Consumer<String> partial, Consumer<String> result,
+                              Consumer<String> error) {
+        vietnamese = new VietnameseVoiceInput(context, handler, appCommands, ready, partial, result, error);
+        vietnamese.start();
     }
 
     private void startRecognition(SpeechRecognizer session, Intent request, Consumer<String> error) {

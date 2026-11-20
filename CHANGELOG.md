@@ -1,5 +1,11 @@
 # Bản vá Jovi
 
+## 1.2.3 thử nghiệm
+
+- Cập nhật phiên bản Android lên **1.2.3** và mã phiên bản lên **13**.
+- Khung chat thử nhận dạng tiếng Việt của Android trước. Nếu dịch vụ không khả dụng hoặc lỗi kết nối, Jovi chuyển sang nhận dạng ngoại tuyến.
+- Dừng thu micrô nghe nền khi màn hình tắt hoặc máy khóa. Khi mở khóa, Jovi tự quay lại nghe câu gọi. Khung đang mở cũng đóng khi màn hình tắt.
+
 ## Cập nhật sau bản 1.2 thử nghiệm
 
 - Gọi **“Jovi Jovi”** khi màn hình đang mở và máy đã mở khóa để hiện khung chat ở góc trên bên phải. Khung báo **Đang nghe…**, hiện lời nói thành chữ và tự ẩn sau khi trả kết quả. Có thể bấm **×** để đóng.
